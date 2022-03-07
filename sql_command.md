@@ -362,10 +362,10 @@ newpostgres          latest    81eea1ee3806   21 minutes ago   269MB
 bitnami/postgresql   12.10.0   abb450842889   35 hours ago     269MB
 debian               latest    d40157244907   6 days ago       124MB
 root@ubuntukurs:~# docker run --name postgres_db_new -v /opt/postgres_backup/:/opt/postgres_backup/ -v /var/posgresqldb/:/var/posgresqldb/ -e POSTGRES_PASSWORD=Netology -p 5432:5432 -d bitnami/postgresql:12.10.0
-e6fc751d9556985fdc7c53c3126703b66b95600cea5ba84486eafb4ae816ed53
+2f779fe7938d32e7680f43cce13d07ac744f37578bef6d4172f6a424940b9f11
 root@ubuntukurs:~# docker ps
-CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS         PORTS                                       NAMES
-e6fc751d9556   bitnami/postgresql:12.10.0   "/opt/bitnami/script…"   10 seconds ago   Up 6 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   postgres_db_new
+CONTAINER ID   IMAGE                        COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+2f779fe7938d   bitnami/postgresql:12.10.0   "/opt/bitnami/script…"   8 seconds ago   Up 4 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   postgres_db_new
 
 ```
 проверяем список баз
@@ -382,8 +382,19 @@ postgres=# \l
 (3 rows)
 
 ```
+создаем базу
+```
+I have no name!@2f779fe7938d:/$ psql -U postgres -h localhost
+Password for user postgres: 
+psql (12.10)
+Type "help" for help.
 
-восстанавливаем из бэкапа
+postgres=# create database test_db;
+CREATE DATABASE
+postgres=# exit
+
+```
+восстанавливаем из бэкапа в эту базу   
 
 ```
 I have no name!@2f779fe7938d:/$ psql -U postgres test_db < /opt/postgres_backup/test_db.backup
