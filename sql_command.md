@@ -321,3 +321,95 @@ test_db=# explain select фамилия from clients where заказ is not nul
 приблизительная стоимость выполнения запроса 18.30  
 ожидаемое число строк 806  
 ожидаемый размер строк 32
+
+
+### Задача 6 (в лекции  говорили, что можно не делать 6 задание, так как еще не проходили postgresql, но нагуглил, ничего сложного :))  
+
+Создайте бэкап БД test_db и поместите его в volume, предназначенный для бэкапов (см. Задачу 1).
+
+Остановите контейнер с PostgreSQL (но не удаляйте volumes).
+
+Поднимите новый пустой контейнер с PostgreSQL.
+
+Восстановите БД test_db в новом контейнере.
+
+Приведите список операций, который вы применяли для бэкапа данных и восстановления.
+
+
+бэкап базы на volume
+```
+root@eb4854a2ba57:/opt# pg_dump -U postgres -W test_db > /opt/postgres_backup/test_db.backup
+```
+остановил контейнер
+```
+root@ubuntukurs:~# docker ps
+CONTAINER ID   IMAGE                        COMMAND                  CREATED        STATUS         PORTS                                       NAMES
+eb4854a2ba57   bitnami/postgresql:12.10.0   "/opt/bitnami/script…"   28 hours ago   Up 6 minutes   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   postgresdb
+root@ubuntukurs:~# docker stop postgresdb 
+postgresdb
+root@ubuntukurs:~# docker ps -a
+CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS                      PORTS     NAMES
+bde54ad1a8ab   newpostgres                  "/opt/bitnami/script…"   17 minutes ago   Exited (0) 7 minutes ago              postgres_new
+eb4854a2ba57   bitnami/postgresql:12.10.0   "/opt/bitnami/script…"   28 hours ago     Exited (0) 21 seconds ago             postgresdb
+74f968ef4924   debian                       "echo 'Hello world'"     28 hours ago     Exited (0) 28 hours ago               eager_bell
+
+```
+запустил новый контейнер
+```
+root@ubuntukurs:~# docker images
+REPOSITORY           TAG       IMAGE ID       CREATED          SIZE
+newpostgres          latest    81eea1ee3806   21 minutes ago   269MB
+bitnami/postgresql   12.10.0   abb450842889   35 hours ago     269MB
+debian               latest    d40157244907   6 days ago       124MB
+root@ubuntukurs:~# docker run --name postgres_db_new -v /opt/postgres_backup/:/opt/postgres_backup/ -v /var/posgresqldb/:/var/posgresqldb/ -e POSTGRES_PASSWORD=Netology -p 5432:5432 -d bitnami/postgresql:12.10.0
+e6fc751d9556985fdc7c53c3126703b66b95600cea5ba84486eafb4ae816ed53
+root@ubuntukurs:~# docker ps
+CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS         PORTS                                       NAMES
+e6fc751d9556   bitnami/postgresql:12.10.0   "/opt/bitnami/script…"   10 seconds ago   Up 6 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   postgres_db_new
+
+```
+проверяем список баз
+```
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(3 rows)
+
+```
+
+восстанавливаем из бэкапа
+
+```
+I have no name!@2f779fe7938d:/$ psql -U postgres test_db < /opt/postgres_backup/test_db.backup
+```
+проверяем базу и список таблиц
+```
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ test_db   | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+(4 rows)
+
+postgres=# \c test_db
+You are now connected to database "test_db" as user "postgres".
+test_db=# \dt
+          List of relations
+ Schema |  Name   | Type  |  Owner   
+--------+---------+-------+----------
+ public | clients | table | postgres
+ public | orders  | table | postgres
+(2 rows)
+
+```
